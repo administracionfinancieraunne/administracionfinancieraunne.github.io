@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EOQ Caso 1 — Demanda constante | FCE-UNNE</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0f1117; --surface:#181d27; --border:#252d3d;
+    --accent:#38bdf8; --accent2:#7dd3fc;
+    --green:#3fb950; --yellow:#e0a820; --red:#f85149; --purple:#bc8cff;
+    --text:#e8edf5; --muted:#7a8599;
+    --mono:'IBM Plex Mono',monospace; --sans:'DM Sans',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow:hidden}
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:11px 22px;
+    display:flex;align-items:center;justify-content:space-between;gap:10px;position:relative;overflow:hidden}
+  header::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+    background:linear-gradient(180deg,var(--accent),var(--accent2))}
+  .badge{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;
+    padding:3px 10px;border-radius:3px;border:1px solid var(--accent);color:var(--accent)}
+  .hdr-left{display:flex;align-items:center;gap:12px}
+  .hdr-title h1{font-size:13px;font-weight:600;color:var(--text)}
+  .hdr-title p{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:1px}
+  .hdr-right{font-size:10px;color:var(--muted);font-family:var(--mono);text-align:right;line-height:1.6}
+  .model-badge{display:flex;align-items:center;gap:6px;font-family:var(--mono);
+    font-size:10px;font-weight:600;color:var(--accent2)}
+  .model-dot{width:6px;height:6px;border-radius:50%;background:var(--accent2);
+    box-shadow:0 0 8px var(--accent2);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .chips{display:flex;flex-wrap:wrap;gap:5px;padding:7px 22px;
+    background:var(--surface);border-bottom:1px solid var(--border)}
+  .chip{font-family:var(--mono);font-size:9px;color:var(--muted);
+    border:1px solid var(--border);border-radius:20px;padding:2px 9px}
+  .grid{display:grid;grid-template-columns:270px 1fr 300px;height:calc(100vh - 80px);overflow:hidden}
+  .sidebar{background:var(--surface);border-right:1px solid var(--border);
+    overflow-y:auto;padding:14px 13px;display:flex;flex-direction:column;gap:14px}
+  .sec{font-family:var(--mono);font-size:9px;font-weight:700;color:var(--muted);
+    letter-spacing:2.5px;text-transform:uppercase;margin-bottom:8px;
+    display:flex;align-items:center;gap:7px}
+  .sec::after{content:'';flex:1;height:1px;background:var(--border)}
+  .pgrp{display:flex;flex-direction:column;gap:9px}
+  .pi label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);
+    font-family:var(--mono);margin-bottom:3px}
+  .pi label span{font-size:11px;font-weight:700}
+  .hint{font-size:9px;color:#4a5568;font-family:var(--mono);margin-top:2px;line-height:1.4}
+  .va{color:var(--accent)} .vg{color:var(--green)} .vy{color:var(--yellow)} .vp{color:var(--purple)}
+  input[type=range]{-webkit-appearance:none;width:100%;height:3px;border-radius:2px;
+    background:var(--border);outline:none;cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;
+    border-radius:50%;background:var(--accent);cursor:pointer;transition:transform .15s}
+  input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.35)}
+  input[type=range].g::-webkit-slider-thumb{background:var(--green)}
+  input[type=range].y::-webkit-slider-thumb{background:var(--yellow)}
+  input[type=range].p::-webkit-slider-thumb{background:var(--purple)}
+  .rbox{background:#0d1117;border:1px solid var(--border);border-radius:6px;
+    padding:10px 12px;font-family:var(--mono);font-size:10px;line-height:1.8;color:var(--muted)}
+  .rr{display:flex;justify-content:space-between;align-items:center}
+  .rn{color:var(--text);font-weight:600;font-size:10px}
+  .rv{color:var(--accent);font-size:11px;font-weight:700}
+  .rv.vg{color:var(--green)} .rv.vy{color:var(--yellow)} .rv.vp{color:var(--purple)}
+  .rs{font-size:9px;color:#4a5568;margin-top:-2px;margin-bottom:4px}
+  .rbox hr{border:none;border-top:1px solid var(--border);margin:6px 0}
+  .content{display:flex;flex-direction:column;overflow:hidden}
+  .ca{flex:1;padding:13px 18px 6px;min-height:0;display:flex;flex-direction:column}
+  .ct{font-family:var(--mono);font-size:9px;font-weight:700;color:var(--muted);
+    letter-spacing:2px;text-transform:uppercase;margin-bottom:5px}
+  .pills{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:6px}
+  .pill{display:flex;align-items:center;gap:4px;font-size:9px;font-family:var(--mono);color:var(--muted)}
+  .pd{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+  .cw{position:relative;flex:1;min-height:0}
+  canvas{display:block}
+  .coa{flex-shrink:0;height:230px;border-top:1px solid var(--border);padding:8px 18px 8px;background:#0d1117}
+  .coh{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+  .cleg{display:flex;gap:12px;flex-wrap:wrap}
+  .cli{display:flex;align-items:center;gap:5px;font-size:9px;font-family:var(--mono)}
+  .cll{width:16px;height:2.5px;border-radius:2px;flex-shrink:0}
+  .cld{width:16px;height:0;flex-shrink:0}
+  .fpanel{background:var(--surface);border-left:1px solid var(--border);
+    overflow-y:auto;padding:14px 13px;display:flex;flex-direction:column;gap:14px}
+  .fvbox{background:#0d1117;border:1px solid var(--border);border-radius:7px;padding:13px}
+  .fvsub{font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;
+    font-family:var(--mono);margin-bottom:9px;font-weight:700}
+  .fvstep{display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;margin-bottom:9px}
+  .feq{color:var(--muted);font-size:15px;padding:0 3px}
+  .fsym{color:var(--accent);font-weight:700;font-size:14px}
+  .fop{color:var(--muted)}
+  .fnv{color:var(--green);font-weight:700}
+  .fny{color:var(--yellow);font-weight:700}
+  .rwrap{display:inline-flex;align-items:center;vertical-align:middle}
+  .rsign{font-size:24px;line-height:1;color:var(--accent);margin-right:-1px}
+  .rsign.g{color:var(--green)}
+  .rfrac{border-top:2px solid var(--accent);padding:1px 5px 2px;display:inline-flex;flex-direction:column;align-items:center}
+  .rfrac.g{border-top-color:var(--green)}
+  .rfrac .rn2{font-size:10px;color:var(--text);white-space:nowrap}
+  .rfrac .rl{width:100%;height:1px;background:var(--muted);margin:2px 0}
+  .rfrac .rd{font-size:10px;color:var(--text);white-space:nowrap}
+  .fstep-label{font-size:9px;color:#4a5568;font-family:var(--mono);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;margin-top:2px}
+  .fresult{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.04);
+    border:1px solid var(--accent);border-radius:6px;padding:10px 13px;margin-top:6px}
+  .frl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:var(--mono)}
+  .frv{font-size:22px;font-weight:700;color:var(--accent);font-family:var(--mono)}
+  .fru{font-size:11px;color:var(--muted);font-family:var(--mono)}
+  .glos{background:#0d1117;border:1px solid var(--border);border-radius:6px;
+    padding:10px 12px;font-family:var(--mono);font-size:10px;line-height:1.85;color:#4a5568}
+  .gr{display:flex;justify-content:space-between;align-items:baseline}
+  .gsym{color:var(--accent);font-weight:700;min-width:55px}
+  .gval{color:var(--green);font-weight:600}
+  .glos hr{border:none;border-top:1px solid var(--border);margin:5px 0}
+  .tip{font-size:10px;color:var(--muted);font-family:var(--mono);line-height:1.7;
+    background:#0d1117;border:1px solid var(--border);border-radius:6px;padding:10px 12px}
+
+  /* ── SIMULATION CONTROLS ── */
+  .sgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .sc{background:#0d1117;border:1px solid var(--border);border-radius:6px;padding:8px 10px}
+  .sc .sl{font-size:9px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
+  .sc .sv{font-size:14px;font-family:var(--mono);font-weight:600;color:var(--accent)}
+  .sc .sv.g{color:var(--green)} .sc .sv.y{color:var(--yellow)} .sc .sv.r{color:var(--red)}
+  .ctrls{display:flex;flex-direction:column;gap:8px}
+  .btn{border:none;border-radius:6px;font-family:var(--mono);font-size:12px;font-weight:600;
+    cursor:pointer;padding:9px 14px;display:flex;align-items:center;justify-content:center;
+    gap:6px;transition:opacity .15s,transform .1s;width:100%}
+  .btn:hover{opacity:.85} .btn:active{transform:scale(.97)}
+  .bp{background:var(--green);color:#0d1117}
+  .bpa{background:var(--yellow);color:#0d1117}
+  .br{background:var(--border);color:var(--text)}
+  .spd{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--muted);font-family:var(--mono)}
+  .spd input{flex:1}
+  .prog{height:3px;background:var(--border)}
+  .prog-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--purple));transition:width .1s}
+  .toast{position:fixed;bottom:18px;right:18px;background:var(--red);color:#fff;
+    font-family:var(--mono);font-size:11px;font-weight:600;padding:10px 16px;
+    border-radius:8px;display:none;z-index:999}
+  ::-webkit-scrollbar{width:4px}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+<header>
+  <div class="hdr-left">
+    <div class="badge">Lote Óptimo — Caso 1</div>
+    <div class="hdr-title">
+      <h1>Escenario Determinista</h1>
+      <p>Administración Financiera · FCE-UNNE · Unidad 4</p>
+    </div>
+  </div>
+  <div class="model-badge"><div class="model-dot"></div>Modelo EOQ (Economic Order Quantity) Harris - Wilson</div>
+</header>
+<div class="prog"><div class="prog-bar" id="progBar"></div></div>
+<div class="chips"><span style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px">SUPUESTOS:</span><div class="chip">Demanda constante y conocida</div><div class="chip">Costo de ordenar constante</div><div class="chip">No existen restricciones para tamaño de lote</div></div>
+<div class="grid">
+
+  <aside class="sidebar">
+    <div>
+      <div class="sec">Parámetros</div>
+      <div class="pgrp">
+        <div class="pi">
+          <label>Demanda anual (S) <span class="va" id="lS">60.000 u</span></label>
+          <input type="range" id="sS" min="10000" max="200000" step="5000" value="60000">
+          <div class="hint">Unidades demandadas por año</div>
+        </div>
+        <div class="pi">
+          <label>Costo de ordenar (o) <span class="va" id="lo">$ 900</span></label>
+          <input type="range" id="so" min="100" max="5000" step="100" value="900">
+          <div class="hint">Costo fijo por cada pedido emitido</div>
+        </div>
+        <div class="pi">
+          <label>Costo unitario (c) <span class="va" id="lc">$ 800</span></label>
+          <input type="range" id="sc" min="100" max="5000" step="50" value="800">
+        </div>
+        <div class="pi">
+          <label>Tasa mantenimiento (i) <span class="vy" id="li">22,00 %</span></label>
+          <input type="range" id="si" min="5" max="60" step="0.5" value="22" class="y">
+          <div class="hint">Costo anual de mantener 1 unidad en stock / c</div>
+        </div>
+
+        <div class="pi">
+          <label>Demora en la entrega (L) <span class="vp" id="llead">0 días</span></label>
+          <input type="range" id="slead" min="0" max="30" step="1" value="0" class="p">
+        </div>
+
+      </div>
+    </div>
+    <div>
+      <div class="sec">Resultados</div>
+      <div class="rbox">
+
+        <div class="rr"><span class="rn">Q* — Lote óptimo</span><span class="rv" id="rQopt">—</span></div>
+        <div class="rs">√( 2·S·o / c · i )</div>
+        <div class="rr"><span class="rn">Punto de Pedido (PP)</span><span class="rv vp" id="rPP">— u</span></div>
+        <div class="rs">(S / 365) · L</div>
+
+
+        <hr>
+        <div class="rr"><span class="rn">Costo Ordenar (CO)</span><span class="rv" id="rCO">—</span></div>
+        <div class="rs">(S / Q*) · o</div>
+        <div class="rr"><span class="rn">Costo Mantener (CM)</span><span class="rv vy" id="rCM">—</span></div>
+        <div class="rs">(Q*/2) · c · i</div>
+        <div class="rr"><span class="rn">Costo Total (CT)</span><span class="rv" id="rCT">—</span></div>
+        <hr>
+
+        <div class="rr"><span class="rn">Inversión media</span><span class="rv" id="rINV">— $</span></div>
+        <div class="rs">(Q*/2) · c</div>
+        <div class="rr"><span class="rn">Pedidos / año</span><span class="rv" id="rORD">—</span></div>
+        <div class="rs">S / Q*</div>
+        <div class="rr"><span class="rn">Periodicidad (T)</span><span class="rv" id="rPER">—</span></div>
+        <div class="rs">365 / (S / Q*)  días</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec">Estadísticas simulación</div>
+      <div class="sgrid">
+        <div class="sc"><div class="sl">Día</div><div class="sv" id="stDay">—</div></div>
+        <div class="sc"><div class="sl">Stock</div><div class="sv g" id="stStock">—</div></div>
+        <div class="sc"><div class="sl">Pedidos</div><div class="sv" id="stOrd">0</div></div>
+        <div class="sc"><div class="sl">Costo acum.</div><div class="sv y" id="stCost">$0</div></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec">Controles</div>
+      <div class="ctrls">
+        <div style="display:flex;gap:7px">
+          <button class="btn bp" id="btnPlay" onclick="toggleSim()" style="flex:1">▶ PLAY</button>
+          <button class="btn br" onclick="resetSim()" style="flex:1">↺ RESET</button>
+        </div>
+        <div class="spd">
+          <span>Velocidad</span>
+          <input type="range" id="sspd" min="1" max="10" step="1" value="4"
+            oninput="simSpeed=+this.value;document.getElementById('lspd').textContent='x'+simSpeed">
+          <span id="lspd" style="min-width:32px;text-align:right">x4</span>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <div class="content">
+    <div class="ca">
+      <div class="ct">Comportamiento del inventario en el tiempo</div>
+      <div class="pills">
+        <div class="pill"><div class="pd" style="background:var(--accent)"></div>Nivel de inventario</div>
+        <div class="pill"><div class="pd" style="background:#bc8cff"></div>Punto de Pedido</div>
+        <div class="pill"><div class="pd" style="background:#f97316"></div>Stock promedio</div>
+        <div class="pill"><div class="pd" style="background:#a3e635"></div>Lote óptimo Q*</div>
+        <div class="pill"><div class="pd" style="background:#d29922"></div>Orden emitida</div>
+      </div>
+      <div class="cw"><canvas id="invChart"></canvas></div>
+    </div>
+    <div class="coa">
+      <div class="coh">
+        <div class="ct" style="margin-bottom:0">Curvas de costo en función de Q</div>
+        <div class="cleg">
+          <div class="cli"><div class="cll" style="background:var(--accent)"></div><span style="color:var(--accent)">CO — Ordenar</span></div>
+          <div class="cli"><div class="cll" style="background:#e0a820"></div><span style="color:#e0a820">CM — Mantener</span></div>
+          <div class="cli"><div class="cll" style="background:#e8edf5;height:3px"></div><span style="color:#e8edf5">CT — Total</span></div>
+          <div class="cli"><div class="cld" style="border-top:2px dashed #bc8cff"></div><span style="color:#bc8cff">Q* óptimo</span></div>
+        </div>
+      </div>
+      <div style="position:relative;height:180px"><canvas id="costChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="fpanel">
+    <div>
+      <div class="sec">Fórmula Q*</div>
+      <div class="fvbox" style="margin-bottom:9px">
+        <div class="fvsub">Modelo EOQ — Harris &amp; Williams</div>
+        <div class="fvstep">
+          <span class="fsym">Q*</span><span class="feq">=</span>
+          <span class="rwrap">
+            <span class="rsign">√</span>
+            <span class="rfrac">
+              <span class="rn2"><span style="color:var(--muted)">2</span> · <span style="color:var(--accent)">S</span> · <span style="color:var(--accent)">o</span></span>
+              <span class="rl"></span>
+              <span class="rd"><span style="color:var(--accent)">c · i</span></span>
+            </span>
+          </span>
+        </div>
+      </div>
+      <div class="fvbox">
+        <div class="fvsub">Con valores actuales</div>
+        <div class="fstep-label">Paso 1 — Sustituir</div>
+        <div class="fvstep">
+          <span class="fsym">Q*</span><span class="feq">=</span>
+          <span class="rwrap">
+            <span class="rsign g">√</span>
+            <span class="rfrac g">
+              <span class="rn2"><span class="fop">2·</span><span class="fnv" id="fvS">60.000</span><span class="fop">·</span><span class="fnv" id="fvo">900</span></span>
+              <span class="rl"></span>
+              <span class="rd"><span class="fnv" id="fvc">800</span><span class="fop">·</span><span class="fnv" id="fvinet">0,2200</span></span>
+            </span>
+          </span>
+        </div>
+        <div class="fstep-label">Paso 2 — Num / Den</div>
+        <div class="fvstep">
+          <span class="fsym">Q*</span><span class="feq">=</span>
+          <span class="rwrap">
+            <span class="rsign g">√</span>
+            <span class="rfrac g">
+              <span class="rn2"><span class="fnv" id="fvnum">108.000.000</span></span>
+              <span class="rl"></span>
+              <span class="rd"><span class="fnv" id="fvden">176,96</span></span>
+            </span>
+          </span>
+        </div>
+        <div class="fstep-label">Paso 3 — Resultado</div>
+        <div class="fvstep">
+          <span class="fsym">Q*</span><span class="feq">=</span>
+          <span class="rwrap">
+            <span class="rsign g">√</span>
+            <span class="rfrac g" style="border-top:none;padding-top:0">
+              <span class="rn2" style="font-size:12px"><span class="fnv" id="fvrad">610.431</span></span>
+            </span>
+          </span>
+          <span class="feq">=</span>
+          <span style="color:var(--accent);font-weight:700;font-size:17px;font-family:var(--mono)" id="fvinline">782</span>
+          <span class="fop" style="font-size:10px"> u</span>
+        </div>
+        <div class="fresult">
+          <div>
+            <div class="frl">Lote Óptimo Q*</div>
+            <div style="display:flex;align-items:baseline;gap:5px">
+              <span class="frv" id="frbig">782</span>
+              <span class="fru">u / pedido</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="sec">Valores actuales</div>
+      <div class="glos">
+        <div class="gr"><span class="gsym">S</span><span class="gval" id="gvS">60.000 u/año</span></div>
+        <div class="gr"><span class="gsym">o</span><span class="gval" id="gvo">$ 900</span></div>
+        <div class="gr"><span class="gsym">c</span><span class="gval" id="gvc">$ 800</span></div>
+        <div class="gr"><span class="gsym">i</span><span class="gval" id="gvi">22,12 %</span></div>
+        
+        <hr>
+        <div class="gr"><span class="gsym">i</span><span class="gval" id="gvinet">22,00 %</span></div>
+        <div class="gr"><span class="gsym">2·S·o</span><span class="gval" id="gvnum">108.000.000</span></div>
+        <div class="gr"><span class="gsym">c·i</span><span class="gval" id="gvden">176,96</span></div>
+        <div class="gr"><span class="gsym">radicando</span><span class="gval" id="gvrad">610.431</span></div>
+        <div class="gr"><span class="gsym">Q*</span><span class="gval" id="gvQ">782 u</span></div>
+        
+        
+      </div>
+    </div>
+    <div class="tip">📌 La demanda es constante y perfectamente conocida. Los días de demora en la entrega de la orden (si existen) también son conocidos y constantes. El stock baja de forma constante desde Q* hasta 0. Los únicos costos contemplados por el modelo son los costos de ordenar y de mantener inventarios, los cuales no varían durante todo el período de análisis. El lote óptimo de inventario Q* será aquel que minimiza CO + CM.</div>
+  </div>
+</div>
+
+<script>
+const NCtable=[
+  {lbl:'Sin SS · z=0',z:0},
+  {lbl:'90% · z=1.28',z:1.28},
+  {lbl:'95% · z=1.65',z:1.65},
+  {lbl:'99% · z=2.33',z:2.33},
+];
+let P={S:60000,o:900,c:800,iPct:22,phiPct:22,lead:0,sigPct:15,ncIdx:1};
+const inet=()=>Math.max(0.001,P.iPct/100);
+const Qopt=()=>Math.sqrt(2*P.S*P.o/(P.c*inet()));
+const daily=()=>P.S/365;
+const sigD=()=>daily()*(P.sigPct/100);
+const SSval=()=>0;
+const PPval=()=>Math.round(daily()*P.lead);
+const CO=()=>(P.S/Qopt())*P.o;
+const CM=()=>(Qopt()/2+SSval())*P.c*inet();
+const CT=()=>CO()+CM();
+const INV=()=>(Qopt()/2+SSval())*P.c;
+
+function fmt(n,d=0){return n.toLocaleString('es-AR',{minimumFractionDigits:d,maximumFractionDigits:d});}
+function fmtM(n){return '$ '+fmt(Math.round(n));}
+function tx(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
+
+function updateUI(){
+  const Q=Qopt(),in_=inet();
+  const num=2*P.S*P.o,den=P.c*in_,rad=num/den;
+  
+  tx('rQopt',fmt(Math.round(Q))+' u');
+  tx('rPP',fmt(PPval())+' u');
+  
+  
+  tx('rCO',fmtM(CO())); tx('rCM',fmtM(CM())); tx('rCT',fmtM(CT()));
+  tx('rINV',fmtM(INV())); tx('rORD',fmt(P.S/Q,1)); tx('rPER',fmt(365/(P.S/Q),1)+' días');
+  tx('fvS',fmt(P.S)); tx('fvo',fmt(P.o)); tx('fvc',fmt(P.c));
+  tx('fvinet',fmt(in_,4));
+  tx('fvnum',fmt(Math.round(num))); tx('fvden',fmt(den,4));
+  tx('fvrad',fmt(Math.round(rad)));
+  tx('fvinline',fmt(Math.round(Q))); tx('frbig',fmt(Math.round(Q)));
+  tx('gvS',fmt(P.S)+' u/año'); tx('gvo','$ '+fmt(P.o));
+  tx('gvc','$ '+fmt(P.c)); tx('gvi',fmt(P.iPct,2)+' %');
+  
+  tx('gvinet',fmt(in_*100,2)+' %');
+  tx('gvnum',fmt(Math.round(num))); tx('gvden',fmt(den,4));
+  tx('gvrad',fmt(Math.round(rad))); tx('gvQ',fmt(Math.round(Q))+' u');
+  
+  
+  rebuildCostChart(); drawInvChart();
+}
+
+document.getElementById('sS').oninput=function(){P.S=+this.value;tx('lS',fmt(P.S)+' u');updateUI();};
+document.getElementById('so').oninput=function(){P.o=+this.value;tx('lo','$ '+fmt(P.o));updateUI();};
+document.getElementById('sc').oninput=function(){P.c=+this.value;tx('lc','$ '+fmt(P.c));updateUI();};
+document.getElementById('si').oninput=function(){P.iPct=+this.value;tx('li',fmt(P.iPct,2)+' %');updateUI();};
+document.getElementById('slead').oninput=function(){P.lead=+this.value;tx('llead',P.lead+' día'+(P.lead===1?'':'s'));updateUI();};
+
+
+
+// ── Q* LINE PLUGIN ──
+const qStarPlugin={
+  id:'qstarline',
+  afterDatasetsDraw(chart){
+    if(chart.canvas.id!=='costChart')return;
+    const xs=chart.scales.x,ys=chart.scales.y;
+    if(!xs||!ys)return;
+    const lbs=chart.data.labels;
+    if(!lbs||lbs.length<2)return;
+    const Qe=Qopt();
+    let idx=lbs.length-1;
+    for(let i=0;i<lbs.length;i++){if(lbs[i]>=Qe){idx=i;break;}}
+    let px;
+    if(idx===0){px=xs.getPixelForValue(lbs[0]);}
+    else{
+      const l0=lbs[idx-1],l1=lbs[idx];
+      const fr=(l1===l0)?0:(Qe-l0)/(l1-l0);
+      px=xs.getPixelForValue(l0)+fr*(xs.getPixelForValue(l1)-xs.getPixelForValue(l0));
+    }
+    const ctx2=chart.ctx;
+    ctx2.save();
+    ctx2.beginPath();ctx2.setLineDash([5,4]);
+    ctx2.strokeStyle='#bc8cff';ctx2.lineWidth=1.5;
+    ctx2.moveTo(px,ys.top);ctx2.lineTo(px,ys.bottom);ctx2.stroke();
+    const ctAtQ=(P.S/Qe)*P.o+(Qe/2+SSval())*P.c*inet();
+    const py=ys.getPixelForValue(ctAtQ);
+    ctx2.setLineDash([]);
+    ctx2.beginPath();ctx2.arc(px,py,5,0,Math.PI*2);ctx2.fillStyle='#bc8cff';ctx2.fill();
+    ctx2.beginPath();ctx2.arc(px,py,2,0,Math.PI*2);ctx2.fillStyle='#0f1117';ctx2.fill();
+    const lbl='Q*='+fmt(Math.round(Qe))+' u';
+    ctx2.font="700 9px 'IBM Plex Mono'";
+    const tw=ctx2.measureText(lbl).width;
+    const ca=chart.chartArea;
+    const lx=(px+tw+14<ca.right)?px+7:px-tw-9;
+    ctx2.fillStyle='rgba(15,17,23,0.88)';ctx2.fillRect(lx-2,ys.top+3,tw+6,14);
+    ctx2.fillStyle='#bc8cff';ctx2.fillText(lbl,lx+1,ys.top+13);
+    ctx2.restore();
+  }
+};
+Chart.register(qStarPlugin);
+
+// ── COST CHART ──
+let costChart;
+
+// Plugin: tooltip especial sobre el punto Q* exacto
+const qStarTooltip = {
+  id:'qStarTooltip',
+  afterDraw(chart){
+    const minDs = chart.data.datasets.findIndex(d=>d.label==='Min');
+    if(minDs<0) return;
+    const meta = chart.getDatasetMeta(minDs);
+    const pt = meta.data.find(p=>p&&p.$context&&p.$context.raw!==null);
+    if(!pt) return;
+    // store pixel position for mousemove
+    chart._qstarPx = {x:pt.x, y:pt.y};
+  }
+};
+Chart.register(qStarTooltip);
+
+function buildCostData(){
+  const Q=Qopt(),qMin=Math.max(1,Q*0.08),qMax=Q*3.5;
+  const co=[],cm=[],ct=[];
+  let minCT=Infinity,minIdx=0;
+  const N=120;
+  const qVals=[];
+  for(let k=0;k<=N;k++){
+    const q=qMin+(qMax-qMin)*k/N;
+    const coV=(P.S/q)*P.o,cmV=(q/2)*P.c*inet(),ctV=coV+cmV;
+    qVals.push(q);
+    co.push({x:q,y:coV});
+    cm.push({x:q,y:cmV});
+    ct.push({x:q,y:ctV});
+    if(ctV<minCT){minCT=ctV;minIdx=k;}
+  }
+  const pts=ct.map((v,i)=>i===minIdx?v:null);
+  // Punto de equilibrio exacto: CO(Q*) = CM(Q*) = CT/2
+  const coOpt=(P.S/Q)*P.o, cmOpt=(Q/2)*P.c*inet();
+  const eqPt={x:Q, y:coOpt}; // CO=CM en Q*, usamos CO como y de referencia
+  return {co,cm,ct,pts,minCT,optQ:Q,coOpt,cmOpt,ctOpt:coOpt+cmOpt};
+}
+function rebuildCostChart(){
+  if(!costChart)return;
+  const d=buildCostData();
+  ['co','cm','ct','pts'].forEach((k,i)=>costChart.data.datasets[i].data=d[k]);
+  // update equilibrium hover point
+  // vertical line annotation at exact Q*
+  costChart.options.plugins.annotation={
+    annotations:{
+      optLine:{
+        type:'line',
+        xMin:d.optQ, xMax:d.optQ,
+        borderColor:'#bc8cff',borderWidth:1.5,
+        borderDash:[4,4],
+        label:{content:'Q*= '+fmt(Math.round(d.optQ))+' u',display:true,
+          position:'start',color:'#e8edf5',
+          font:{family:'IBM Plex Mono',size:9},
+          backgroundColor:'rgba(24,29,39,0.88)',padding:{x:5,y:3}}
+      }
+    }
+  };
+  const allVals=[...d.co,...d.cm,...d.ct].filter(v=>v&&v.y>0&&isFinite(v.y)).map(v=>v.y);
+  const yMax=Math.min(Math.max(...allVals), d.minCT*4.5);
+  costChart.options.scales.y.max=Math.ceil(yMax/1000)*1000;
+  costChart.options.scales.y.min=0;
+  costChart.update('none');
+}
+function initCostChart(){
+  const ctx=document.getElementById('costChart').getContext('2d');
+  const d=buildCostData();
+  costChart=new Chart(ctx,{
+    type:'line',
+    data:{datasets:[
+      {label:'CO',data:d.co,borderColor:'#38bdf8',borderWidth:2,pointRadius:0,tension:0.35,fill:false},
+      {label:'CM',data:d.cm,borderColor:'#e0a820',borderWidth:2,pointRadius:0,tension:0.35,fill:false},
+      {label:'CT',data:d.ct,borderColor:'rgba(232,237,245,.8)',borderWidth:2.5,pointRadius:0,tension:0.35,fill:false},
+      {label:'Min',data:d.pts,borderColor:'transparent',pointBackgroundColor:'#e8edf5',
+        pointBorderColor:'#e8edf5',pointRadius:5,pointStyle:'circle',showLine:false},
+
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,animation:false,
+      layout:{padding:{right:8}},
+      plugins:{
+        legend:{display:false},
+        annotation:{
+          annotations:{
+            optLine:{type:'line',xMin:0,xMax:0,borderColor:'#bc8cff',borderWidth:1.5,borderDash:[4,4]}
+          }
+        },
+        tooltip:{
+          mode:'index',intersect:false,
+          backgroundColor:'#181d27',borderColor:'#252d3d',borderWidth:1,
+          padding:9,bodySpacing:5,usePointStyle:true,
+          titleFont:{family:'IBM Plex Mono',size:10,weight:'600'},
+          bodyFont:{family:'IBM Plex Mono',size:10},
+          filter:item=>item.dataset.label!=='Min',
+          callbacks:{
+            title:items=>'Q = '+fmt(Math.round(items[0].parsed.x))+' u',
+            label:item=>{
+              const v=typeof item.raw==='object'?item.raw.y:item.raw;
+              return '  '+item.dataset.label+':  $ '+fmt(Math.round(v));
+            },
+            labelColor:item=>{
+              const m={CO:'#38bdf8',CM:'#e0a820',CT:'#e8edf5'};
+              const c=m[item.dataset.label]||'#8b949e';
+              return {borderColor:c,backgroundColor:c,borderWidth:2,borderRadius:2};
+            },
+            afterBody:items=>{
+              const co=items.find(i=>i.dataset.label==='CO');
+              const cm=items.find(i=>i.dataset.label==='CM');
+              if(!co||!cm)return[];
+              const coY=typeof co.raw==='object'?co.raw.y:co.raw;
+              const cmY=typeof cm.raw==='object'?cm.raw.y:cm.raw;
+              const d2=coY-cmY;
+              const note=d2>0?'CO > CM  (Q pequeño)':'CO < CM  (Q grande)';
+              return['','  Δ: $'+fmt(Math.round(Math.abs(d2)))+'  '+note];
+            }
+          }
+        }
+      },
+      scales:{
+        x:{type:'linear',title:{display:true,text:'Tamaño del lote Q (unidades)',color:'#7a8599',
+            font:{family:'IBM Plex Mono',size:9},padding:{top:3}},
+          ticks:{color:'#4a5568',font:{family:'IBM Plex Mono',size:8},maxTicksLimit:9,
+            callback:v=>{if(v>=1000)return fmt(v/1000,0)+'k';return fmt(v);}},
+          grid:{color:'#1a2030'}},
+        y:{title:{display:true,text:'Costo anual ($)',color:'#7a8599',
+            font:{family:'IBM Plex Mono',size:9},padding:{bottom:3}},
+          ticks:{color:'#4a5568',font:{family:'IBM Plex Mono',size:8},
+            callback:v=>'$'+(v>=1e6?fmt(v/1e6,1)+'M':v>=1000?fmt(v/1000,0)+'k':fmt(v))},
+          grid:{color:'#1a2030'}}
+      }
+    }
+  });
+}
+
+// ── INVENTORY SAWTOOTH CHART ──
+let invChart;
+function buildInvData(){
+  const Q=Qopt(),d_=daily();
+  const ss=SSval(),pp=PPval(),L=P.lead;
+  const cycDays=Q/d_;
+  const totalDays=cycDays*3;
+  const N=300,pts=[],labels=[];
+  for(let i=0;i<=N;i++){
+    const t=totalDays*i/N;
+    const cyc=Math.floor(t/cycDays);
+    const tInC=t-cyc*cycDays;
+    pts.push({x:+(t).toFixed(3), y:Math.max(ss, Q - d_*tInC + ss)});
+  }
+  const avg=Q/2+ss;
+  const xs=pts.map(p=>p.x);
+  return {pts,
+          ppLine:xs.map(x=>({x,y:pp})),
+          ssLine:xs.map(x=>({x,y:ss})),
+          avgLine:xs.map(x=>({x,y:avg})),
+          qoptLine:xs.map(x=>({x,y:Q+ss}))};
+}
+function initInvChart(){
+  const ctx=document.getElementById('invChart').getContext('2d');
+  const d=buildInvData();
+  invChart=new Chart(ctx,{
+    type:'line',
+    data:{datasets:[
+      {label:'Stock',data:d.pts,borderColor:'#38bdf8',borderWidth:2.5,
+        pointRadius:0,tension:0,fill:{target:{value:0},above:'rgba(255,255,255,.05)',below:'rgba(248,81,73,.1)'}},
+      {label:'PP',data:d.ppLine,borderColor:'#bc8cff',borderWidth:1.5,borderDash:[6,3],pointRadius:0,tension:0,fill:false},
+      {label:'Stock promedio',data:d.avgLine,borderColor:'#f97316',borderWidth:1.5,
+        borderDash:[6,3],pointRadius:0,tension:0,fill:false},
+      {label:'Q* (lote óptimo)',data:d.qoptLine,borderColor:'#a3e635',borderWidth:1.5,
+        borderDash:[3,4],pointRadius:0,tension:0,fill:false},
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,animation:{duration:300},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          mode:'index',intersect:false,
+          backgroundColor:'#181d27',borderColor:'#252d3d',borderWidth:1,
+          padding:8,usePointStyle:true,
+          titleFont:{family:'IBM Plex Mono',size:10,weight:'600'},
+          bodyFont:{family:'IBM Plex Mono',size:10},
+          callbacks:{
+            title:items=>{ const v=items[0].parsed?items[0].parsed.x:items[0].label; return (simDay>0?'Día ':'t = ')+fmt(+v,1)+' días'; },
+            label:item=>{ if(item.raw===null)return null; const v=typeof item.raw==='object'?item.raw.y:item.raw; return item.dataset.label+': '+fmt(Math.round(v))+' u'; },
+            labelColor:item=>{
+              const m={Stock:'#38bdf8',PP:'#bc8cff',SS:'#3fb950','Stock promedio':'#f97316',"Q* (lote óptimo)":'#a3e635'};
+              const c=m[item.dataset.label]||'#8b949e';
+              return{borderColor:c,backgroundColor:c,borderWidth:2,borderRadius:2};
+            }
+          }
+        }
+      },
+      scales:{
+        x:{type:'linear',title:{display:true,text:'Tiempo (días)',color:'#7a8599',font:{family:'IBM Plex Mono',size:9},padding:{top:3}},
+          ticks:{color:'#4a5568',font:{family:'IBM Plex Mono',size:8},maxTicksLimit:10,callback:v=>+(v).toFixed(1)},grid:{color:'#1a2030'}},
+        y:{title:{display:true,text:'Unidades en stock',color:'#7a8599',font:{family:'IBM Plex Mono',size:9},padding:{bottom:3}},
+          min:0,ticks:{color:'#4a5568',font:{family:'IBM Plex Mono',size:8},callback:v=>fmt(v)+' u'},grid:{color:'#1a2030'}}
+      }
+    }
+  });
+}
+function drawInvChart(){
+  if(!invChart)return;
+  const d=buildInvData();
+  invChart.data.datasets[0].data=d.pts;
+  // update all additional lines based on how many datasets exist
+  const ds=invChart.data.datasets;
+  if(ds.length>=3 && d.ppLine){ds[1].data=d.ppLine;}
+  if(ds.length>=4 && d.ssLine){ds[2].data=d.ssLine;}
+  // find avgLine and qoptLine datasets
+  ds.forEach(s=>{
+    if(s.label==='PP')s.data=d.ppLine;
+    if(s.label==='SS')s.data=d.ssLine;
+    if(s.label==='Stock promedio')s.data=d.avgLine;
+    if(s.label==='Q* (lote óptimo)')s.data=d.qoptLine;
+  });
+  const mx=Math.max(...d.pts.map(p=>p.y));
+  invChart.options.scales.y.max=Math.ceil(mx*1.25/100)*100;
+  invChart.options.scales.y.min=0;
+  invChart.update();
+}
+
+
+// ═══════════════════════════════
+//  GRÁFICO DE SIMULACIÓN
+// ═══════════════════════════════
+let simChart;
+const MAXWIN = 180;
+let simHist = [];
+
+function initSimChart(){
+  // Replace invChart with simChart for simulation display
+  // We reuse the same canvas (invChart)
+  simChart = invChart; // alias — we'll push data into it
+}
+
+// ═══════════════════════════════
+//  MOTOR DE SIMULACIÓN
+// ═══════════════════════════════
+let simDay=0, simStock=0, simOrd=0, simBrk=0, simLost=0, simCost=0;
+let simRunning=false, simTimer=null, simSpeed=4, pending=[];
+const SIMDAYS=365;
+
+function normalRnd(m,s){
+  let u=0,v=0;
+  while(!u)u=Math.random(); while(!v)v=Math.random();
+  return m+s*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+
+let toastTO=null;
+function showToast(){
+  const t=document.getElementById('toast');
+  if(!t)return;
+  t.style.display='block';
+  clearTimeout(toastTO);
+  toastTO=setTimeout(()=>t.style.display='none',1800);
+}
+
+function updateStats(){
+  tx('stDay',   simDay>0?'Día '+simDay:'—');
+  tx('stStock', simDay>0?fmt(Math.round(simStock))+' u':'—');
+  tx('stOrd',   simOrd);
+  tx('stBrk',   simBrk);
+  tx('stCost',  simDay>0?fmtM(simCost):'$0');
+  tx('stLost',  fmt(Math.round(simLost))+' u');
+  const sv=document.getElementById('stStock');
+  if(sv) sv.className='sv '+(simStock<=SSval()?'r':simStock<=PPval()?'y':'g');
+}
+
+function pushSimPoint(day,stock,pp,ss,isBreak,isOrder){
+  simHist.push({day,stock,pp,ss,isBreak,isOrder});
+  const sl=simHist.slice(-MAXWIN);
+  const ds=invChart.data.datasets;
+  ds[0].data=sl.map(p=>({x:p.day,y:Math.max(0,p.stock)}));
+  // PP line (dataset index 1 if exists)
+  if(ds.length>1 && ds[1].label==='PP') ds[1].data=sl.map(p=>({x:p.day,y:p.pp}));
+  if(ds.length>2 && ds[2].label==='SS') ds[2].data=sl.map(p=>({x:p.day,y:p.ss}));
+  // Stock promedio and Q* lines — update to flat lines (keep as static)
+  ds.forEach(d=>{
+    if(d.label==='Stock promedio') d.data=sl.map(p=>({x:p.day,y:Qopt()/2+SSval()}));
+    if(d.label==="Q* (lote óptimo)") d.data=sl.map(p=>({x:p.day,y:Qopt()+SSval()}));
+  });
+  // Quiebre marker
+  const brkIdx=ds.findIndex(d=>d.label==='Quiebre');
+  if(brkIdx>=0) ds[brkIdx].data=sl.map(p=>p.isBreak?{x:p.day,y:0}:null);
+  else {
+    invChart.data.datasets.push({label:'Quiebre',data:sl.map(p=>p.isBreak?{x:p.day,y:0}:null),
+      borderColor:'transparent',pointRadius:7,pointStyle:'crossRot',
+      pointBackgroundColor:'#f85149',pointBorderColor:'#f85149',showLine:false});
+  }
+  // Orden marker
+  const ordIdx=ds.findIndex(d=>d.label==='Orden');
+  if(ordIdx>=0) ds[ordIdx].data=sl.map(p=>p.isOrder?{x:p.day,y:p.stock}:null);
+  else {
+    invChart.data.datasets.push({label:'Orden',data:sl.map(p=>p.isOrder?{x:p.day,y:p.stock}:null),
+      borderColor:'transparent',pointRadius:6,pointStyle:'triangle',
+      pointBackgroundColor:'#d29922',pointBorderColor:'#d29922',showLine:false});
+  }
+  const mx=Math.max(...sl.map(p=>p.stock),Qopt());
+  invChart.options.scales.y.max=Math.ceil(mx*1.25/100)*100;
+  invChart.update('none');
+}
+
+function resetSim(){
+  clearInterval(simTimer); simRunning=false;
+  simDay=0; simOrd=0; simBrk=0; simLost=0; simCost=0;
+  simHist=[];
+  simStock=Qopt();
+  // restore static sawtooth view
+  drawInvChart();
+  document.getElementById('btnPlay').textContent='▶ PLAY';
+  document.getElementById('btnPlay').className='btn bp';
+  document.getElementById('progBar').style.width='0%';
+  updateStats();
+}
+
+function simStep(){
+  if(simDay>=SIMDAYS){
+    clearInterval(simTimer); simRunning=false;
+    document.getElementById('btnPlay').textContent='▶ PLAY';
+    document.getElementById('btnPlay').className='btn bp';
+    return;
+  }
+  simDay++;
+  document.getElementById('progBar').style.width=(simDay/SIMDAYS*100)+'%';
+
+  // Caso 1 — reposición INSTANTÁNEA (L=0, PP=0), demanda constante
+  const dm=daily();
+  const stockAntes = simStock;
+  simStock -= dm;
+  simCost += Math.max(0, simStock) * P.c * inet() / 365;
+
+  if(simStock <= 0){
+    // Calcular el momento exacto (fraccional) en que el stock toca 0
+    const fracCero = simDay - 1 + stockAntes / dm;
+    pushSimPoint(fracCero, 0, PPval(), 0, false, false);
+    // Reposición instantánea en ese mismo instante
+    simStock = Qopt();
+    simOrd++; simCost += P.o;
+    pushSimPoint(fracCero + 0.001, simStock, PPval(), 0, false, true);
+    // Registrar también el punto del día entero para mantener pendiente constante
+    simStock -= dm * (simDay - fracCero);
+    pushSimPoint(simDay, simStock, PPval(), 0, false, false);
+    updateStats();
+    return;
+  }
+
+  pushSimPoint(simDay, simStock, PPval(), 0, false, false);
+  updateStats();
+}
+
+function startTimer(){
+  const iv=Math.max(16,Math.round(700/simSpeed));
+  simTimer=setInterval(simStep,iv);
+}
+
+function toggleSim(){
+  if(simDay===0){ resetSim(); simStock=Qopt()+SSval(); simHist=[]; pushSimPoint(0, simStock, PPval(), 0, false, false); }
+  simRunning=!simRunning;
+  if(simRunning){
+    startTimer();
+    document.getElementById('btnPlay').textContent='⏸ PAUSE';
+    document.getElementById('btnPlay').className='btn bpa';
+  } else {
+    clearInterval(simTimer);
+    document.getElementById('btnPlay').textContent='▶ PLAY';
+    document.getElementById('btnPlay').className='btn bp';
+  }
+}
+
+initInvChart();
+initCostChart();
+updateUI();
+
+// ── Q* custom tooltip on costChart canvas ──
+(function(){
+  const canvas = document.getElementById('costChart');
+  const tip = document.createElement('div');
+  tip.style.cssText='position:absolute;display:none;pointer-events:none;'+
+    'background:#181d27;border:1px solid #bc8cff;border-radius:8px;'+
+    'padding:10px 14px;font-family:IBM Plex Mono,monospace;font-size:10px;'+
+    'color:#e8edf5;line-height:1.7;z-index:100;white-space:nowrap;'+
+    'box-shadow:0 0 12px rgba(188,140,255,0.3)';
+  canvas.parentElement.style.position='relative';
+  canvas.parentElement.appendChild(tip);
+
+  canvas.addEventListener('mousemove',function(e){
+    const rect=canvas.getBoundingClientRect();
+    const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+    const qp=costChart._qstarPx;
+    if(!qp){tip.style.display='none';return;}
+    const dist=Math.sqrt((mx-qp.x)**2+(my-qp.y)**2);
+    if(dist<=18){
+      const d=buildCostData();
+      const Q=Math.round(d.optQ);
+      const co=Math.round(d.coOpt), cm=Math.round(d.cmOpt), ct=Math.round(d.ctOpt);
+      tip.innerHTML=
+        '<span style="color:#bc8cff;font-weight:700">★ Q* ÓPTIMO = '+fmt(Q)+' u</span><br>'+
+        '<span style="color:#38bdf8">●</span> CO:  $ '+fmt(co)+'<br>'+
+        '<span style="color:#e0a820">●</span> CM:  $ '+fmt(cm)+'<br>'+
+        '<span style="color:#e8edf5">●</span> CT:  $ '+fmt(ct)+'<br>'+
+        '<hr style="border:none;border-top:1px solid #252d3d;margin:6px 0">'+
+        '<span style="color:#a3e635">✓ CO = CM  →  Costo mínimo</span>';
+      // position tooltip: prefer right of point, flip if near edge
+      let tx=qp.x+14, ty=qp.y-30;
+      tip.style.display='block';
+      const tw=tip.offsetWidth;
+      if(tx+tw>canvas.width-10) tx=qp.x-tw-14;
+      if(ty<0) ty=0;
+      tip.style.left=tx+'px'; tip.style.top=ty+'px';
+      // hide the Chart.js default tooltip when we're showing ours
+      costChart.options.plugins.tooltip.enabled=false;
+      costChart.update('none');
+    } else {
+      tip.style.display='none';
+      if(!costChart.options.plugins.tooltip.enabled){
+        costChart.options.plugins.tooltip.enabled=true;
+        costChart.update('none');
+      }
+    }
+  });
+  canvas.addEventListener('mouseleave',function(){
+    tip.style.display='none';
+    costChart.options.plugins.tooltip.enabled=true;
+    costChart.update('none');
+  });
+})();
+resetSim();
+</script>
+<div class="toast" id="toast">⚠ Quiebre de stock</div>
+</body>
+</html>
