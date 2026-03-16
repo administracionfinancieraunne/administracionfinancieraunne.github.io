@@ -65,6 +65,7 @@
   .rv.vg{color:var(--green)} .rv.vy{color:var(--yellow)} .rv.vp{color:var(--purple)}
   .rs{font-size:9px;color:#4a5568;margin-top:-2px;margin-bottom:4px}
   .rbox hr{border:none;border-top:1px solid var(--border);margin:6px 0}
+
   .content{display:flex;flex-direction:column;overflow:hidden}
   .ca{flex:1;padding:13px 18px 6px;min-height:0;display:flex;flex-direction:column}
   .ct{font-family:var(--mono);font-size:9px;font-weight:700;color:var(--muted);
@@ -151,7 +152,7 @@
   <div class="model-badge"><div class="model-dot"></div>Modelo EOQ (Economic Order Quantity) Harris - Wilson</div>
 </header>
 <div class="prog"><div class="prog-bar" id="progBar"></div></div>
-<div class="chips"><span style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px">SUPUESTOS:</span><div class="chip">Demanda constante y conocida</div><div class="chip">Costo de ordenar constante</div><div class="chip">No existen restricciones para tamaño de lote</div></div>
+<div class="chips"><span style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px">SUPUESTOS:</span><div class="chip">Demanda constante y conocida</div><div class="chip">Costo de ordenar constante</div><div class="chip">No existen restricciones para tamaño de lote</div><div class="chip">El reabastecimiento es instantáneo (L = 0)</div></div>
 <div class="grid">
 
   <aside class="sidebar">
@@ -160,12 +161,12 @@
       <div class="pgrp">
         <div class="pi">
           <label>Demanda anual (S) <span class="va" id="lS">60.000 u</span></label>
-          <input type="range" id="sS" min="10000" max="200000" step="5000" value="60000">
+          <input type="range" id="sS" min="10000" max="300000" step="5000" value="60000">
           <div class="hint">Unidades demandadas por año</div>
         </div>
         <div class="pi">
-          <label>Costo de ordenar (o) <span class="va" id="lo">$ 900</span></label>
-          <input type="range" id="so" min="100" max="5000" step="100" value="900">
+          <label>Costo de ordenar (o) <span class="va" id="lo">$ 1.000</span></label>
+          <input type="range" id="so" min="1000" max="5000" step="100" value="1000">
           <div class="hint">Costo fijo por cada pedido emitido</div>
         </div>
         <div class="pi">
@@ -178,10 +179,7 @@
           <div class="hint">Costo anual de mantener 1 unidad en stock / c</div>
         </div>
 
-        <div class="pi">
-          <label>Demora en la entrega (L) <span class="vp" id="llead">0 días</span></label>
-          <input type="range" id="slead" min="0" max="30" step="1" value="0" class="p">
-        </div>
+
 
       </div>
     </div>
@@ -191,8 +189,7 @@
 
         <div class="rr"><span class="rn">Q* — Lote óptimo</span><span class="rv" id="rQopt">—</span></div>
         <div class="rs">√( 2·S·o / c · i )</div>
-        <div class="rr"><span class="rn">Punto de Pedido (PP)</span><span class="rv vp" id="rPP">— u</span></div>
-        <div class="rs">(S / 365) · L</div>
+
 
 
         <hr>
@@ -245,10 +242,8 @@
       <div class="ct">Comportamiento del inventario en el tiempo</div>
       <div class="pills">
         <div class="pill"><div class="pd" style="background:var(--accent)"></div>Nivel de inventario</div>
-        <div class="pill"><div class="pd" style="background:#bc8cff"></div>Punto de Pedido</div>
         <div class="pill"><div class="pd" style="background:#f97316"></div>Stock promedio</div>
         <div class="pill"><div class="pd" style="background:#a3e635"></div>Lote óptimo Q*</div>
-        <div class="pill"><div class="pd" style="background:#d29922"></div>Orden emitida</div>
       </div>
       <div class="cw"><canvas id="invChart"></canvas></div>
     </div>
@@ -362,13 +357,13 @@ const NCtable=[
   {lbl:'95% · z=1.65',z:1.65},
   {lbl:'99% · z=2.33',z:2.33},
 ];
-let P={S:60000,o:900,c:800,iPct:22,phiPct:22,lead:0,sigPct:15,ncIdx:1};
+let P={S:60000,o:1000,c:800,iPct:22,phiPct:22};
 const inet=()=>Math.max(0.001,P.iPct/100);
 const Qopt=()=>Math.sqrt(2*P.S*P.o/(P.c*inet()));
 const daily=()=>P.S/365;
 const sigD=()=>daily()*(P.sigPct/100);
 const SSval=()=>0;
-const PPval=()=>Math.round(daily()*P.lead);
+const PPval=()=>0;
 const CO=()=>(P.S/Qopt())*P.o;
 const CM=()=>(Qopt()/2+SSval())*P.c*inet();
 const CT=()=>CO()+CM();
@@ -383,7 +378,7 @@ function updateUI(){
   const num=2*P.S*P.o,den=P.c*in_,rad=num/den;
   
   tx('rQopt',fmt(Math.round(Q))+' u');
-  tx('rPP',fmt(PPval())+' u');
+
   
   
   tx('rCO',fmtM(CO())); tx('rCM',fmtM(CM())); tx('rCT',fmtM(CT()));
@@ -408,7 +403,7 @@ document.getElementById('sS').oninput=function(){P.S=+this.value;tx('lS',fmt(P.S
 document.getElementById('so').oninput=function(){P.o=+this.value;tx('lo','$ '+fmt(P.o));updateUI();};
 document.getElementById('sc').oninput=function(){P.c=+this.value;tx('lc','$ '+fmt(P.c));updateUI();};
 document.getElementById('si').oninput=function(){P.iPct=+this.value;tx('li',fmt(P.iPct,2)+' %');updateUI();};
-document.getElementById('slead').oninput=function(){P.lead=+this.value;tx('llead',P.lead+' día'+(P.lead===1?'':'s'));updateUI();};
+
 
 
 
@@ -592,7 +587,7 @@ function initCostChart(){
 let invChart;
 function buildInvData(){
   const Q=Qopt(),d_=daily();
-  const ss=SSval(),pp=PPval(),L=P.lead;
+  const ss=SSval();
   const cycDays=Q/d_;
   const totalDays=cycDays*3;
   const N=300,pts=[],labels=[];
@@ -605,7 +600,6 @@ function buildInvData(){
   const avg=Q/2+ss;
   const xs=pts.map(p=>p.x);
   return {pts,
-          ppLine:xs.map(x=>({x,y:pp})),
           ssLine:xs.map(x=>({x,y:ss})),
           avgLine:xs.map(x=>({x,y:avg})),
           qoptLine:xs.map(x=>({x,y:Q+ss}))};
@@ -618,7 +612,7 @@ function initInvChart(){
     data:{datasets:[
       {label:'Stock',data:d.pts,borderColor:'#38bdf8',borderWidth:2.5,
         pointRadius:0,tension:0,fill:{target:{value:0},above:'rgba(255,255,255,.05)',below:'rgba(248,81,73,.1)'}},
-      {label:'PP',data:d.ppLine,borderColor:'#bc8cff',borderWidth:1.5,borderDash:[6,3],pointRadius:0,tension:0,fill:false},
+
       {label:'Stock promedio',data:d.avgLine,borderColor:'#f97316',borderWidth:1.5,
         borderDash:[6,3],pointRadius:0,tension:0,fill:false},
       {label:'Q* (lote óptimo)',data:d.qoptLine,borderColor:'#a3e635',borderWidth:1.5,
@@ -638,7 +632,7 @@ function initInvChart(){
             title:items=>{ const v=items[0].parsed?items[0].parsed.x:items[0].label; return (simDay>0?'Día ':'t = ')+fmt(+v,1)+' días'; },
             label:item=>{ if(item.raw===null)return null; const v=typeof item.raw==='object'?item.raw.y:item.raw; return item.dataset.label+': '+fmt(Math.round(v))+' u'; },
             labelColor:item=>{
-              const m={Stock:'#38bdf8',PP:'#bc8cff',SS:'#3fb950','Stock promedio':'#f97316',"Q* (lote óptimo)":'#a3e635'};
+              const m={Stock:'#38bdf8',SS:'#3fb950','Stock promedio':'#f97316',"Q* (lote óptimo)":'#a3e635'};
               const c=m[item.dataset.label]||'#8b949e';
               return{borderColor:c,backgroundColor:c,borderWidth:2,borderRadius:2};
             }
@@ -660,11 +654,10 @@ function drawInvChart(){
   invChart.data.datasets[0].data=d.pts;
   // update all additional lines based on how many datasets exist
   const ds=invChart.data.datasets;
-  if(ds.length>=3 && d.ppLine){ds[1].data=d.ppLine;}
   if(ds.length>=4 && d.ssLine){ds[2].data=d.ssLine;}
   // find avgLine and qoptLine datasets
   ds.forEach(s=>{
-    if(s.label==='PP')s.data=d.ppLine;
+
     if(s.label==='SS')s.data=d.ssLine;
     if(s.label==='Stock promedio')s.data=d.avgLine;
     if(s.label==='Q* (lote óptimo)')s.data=d.qoptLine;
@@ -719,7 +712,7 @@ function updateStats(){
   tx('stCost',  simDay>0?fmtM(simCost):'$0');
   tx('stLost',  fmt(Math.round(simLost))+' u');
   const sv=document.getElementById('stStock');
-  if(sv) sv.className='sv '+(simStock<=SSval()?'r':simStock<=PPval()?'y':'g');
+  if(sv) sv.className='sv '+(simStock<=SSval()?'r':'g');
 }
 
 function pushSimPoint(day,stock,pp,ss,isBreak,isOrder){
@@ -728,7 +721,7 @@ function pushSimPoint(day,stock,pp,ss,isBreak,isOrder){
   const ds=invChart.data.datasets;
   ds[0].data=sl.map(p=>({x:p.day,y:Math.max(0,p.stock)}));
   // PP line (dataset index 1 if exists)
-  if(ds.length>1 && ds[1].label==='PP') ds[1].data=sl.map(p=>({x:p.day,y:p.pp}));
+
   if(ds.length>2 && ds[2].label==='SS') ds[2].data=sl.map(p=>({x:p.day,y:p.ss}));
   // Stock promedio and Q* lines — update to flat lines (keep as static)
   ds.forEach(d=>{
